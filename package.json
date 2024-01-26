@@ -1,0 +1,8 @@
+{
+  "name": "terraform-learning",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:kpkonghk01/terraform-learning.git",
+  "author": "Pan <kpkong@hk01.com>",
+  "license": "MIT"
+}
