@@ -45,3 +45,23 @@ resource "aws_route_table_association" "furpetto-public-rt-assoc" {
   subnet_id = aws_subnet.furpetto-subnet.id
   route_table_id = aws_route_table.furpetto-public-rt.id
 }
+
+resource "aws_security_group" "furpetto-sg" {
+  name = "dev-sg"
+  description = "dev-security-group"
+  vpc_id = aws_vpc.furpetto-vpc.id
+
+  ingress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
