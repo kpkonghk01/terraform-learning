@@ -6,9 +6,10 @@
   "author": "Pan <kpkong@hk01.com>",
   "license": "MIT",
   "scripts": {
-    "build": "scripts/build.sh",
+    "build": "rm -rf dist && tsc --build tsconfig.json && scripts/packing-package.sh",
     "test": "jest --clearCache --coverage",
-    "package": "mkdir -p dist/layers/deps-layer && cp package*.json dist/layers/deps-layer/ && cp yarn.lock dist/layers/deps-layer/ && cd dist/layers/deps-layer && yarn --frozen-lockfile"
+    "deploy": "terraform -chdir=terraform apply",
+    "deploy:plan": "terraform -chdir=terraform plan"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.133",

@@ -11,5 +11,5 @@ provider "aws" {
   region                   = "ap-northeast-1"
   shared_config_files      = ["~/.aws/config"]
   shared_credentials_files = ["~/.aws/credentials"]
-  profile                  = "vscode"
+  profile                  = "default"
 }
