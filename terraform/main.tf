@@ -1,4 +1,4 @@
-resource "aws_vpc" "furpetto-vpc" {
+resource "aws_vpc" "furpetto_vpc" {
   cidr_block = "172.31.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support = true
@@ -8,8 +8,8 @@ resource "aws_vpc" "furpetto-vpc" {
   }
 }
 
-resource "aws_subnet" "furpetto-subnet" {
-  vpc_id = aws_vpc.furpetto-vpc.id
+resource "aws_subnet" "furpetto_subnet" {
+  vpc_id = aws_vpc.furpetto_vpc.id
   cidr_block = "172.31.16.0/20"
   map_public_ip_on_launch = true
   availability_zone = "ap-northeast-1a"
@@ -19,37 +19,37 @@ resource "aws_subnet" "furpetto-subnet" {
   }
 }
 
-resource "aws_internet_gateway" "furpetto-igw" {
-  vpc_id = aws_vpc.furpetto-vpc.id
+resource "aws_internet_gateway" "furpetto_igw" {
+  vpc_id = aws_vpc.furpetto_vpc.id
 
   tags = {
     Name = "dev-igw"
   }
 }
 
-resource "aws_route_table" "furpetto-public-rt" {
-  vpc_id = aws_vpc.furpetto-vpc.id
+resource "aws_route_table" "furpetto_public_rt" {
+  vpc_id = aws_vpc.furpetto_vpc.id
 
   tags = {
     Name = "dev-public-rt"
   }
 }
 
-resource "aws_route" "default-route" {
-  route_table_id = aws_route_table.furpetto-public-rt.id
+resource "aws_route" "default_route" {
+  route_table_id = aws_route_table.furpetto_public_rt.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_internet_gateway.furpetto-igw.id
+  gateway_id = aws_internet_gateway.furpetto_igw.id
 }
 
-resource "aws_route_table_association" "furpetto-public-rt-assoc" {
-  subnet_id = aws_subnet.furpetto-subnet.id
-  route_table_id = aws_route_table.furpetto-public-rt.id
+resource "aws_route_table_association" "furpetto_public_rt_assoc" {
+  subnet_id = aws_subnet.furpetto_subnet.id
+  route_table_id = aws_route_table.furpetto_public_rt.id
 }
 
-resource "aws_security_group" "furpetto-sg" {
+resource "aws_security_group" "furpetto_sg" {
   name = "dev-sg"
   description = "dev-security-group"
-  vpc_id = aws_vpc.furpetto-vpc.id
+  vpc_id = aws_vpc.furpetto_vpc.id
 
   ingress {
     from_port = 0
