@@ -9,8 +9,8 @@
     "build": "rm -rf dist && tsc --build tsconfig.json && scripts/packing-package.sh",
     "test": "jest --clearCache --coverage",
     "tf:init": "terraform -chdir=terraform init",
-    "deploy": "terraform -chdir=terraform apply",
-    "deploy:plan": "terraform -chdir=terraform plan -out=deploy.tfplan --var-file=env.tfvars"
+    "tf:apply": "terraform -chdir=terraform apply",
+    "tf:plan": "terraform -chdir=terraform plan -out=deploy.tfplan --var-file=env.tfvars"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.133",
