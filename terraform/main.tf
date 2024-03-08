@@ -1,7 +1,7 @@
 resource "aws_vpc" "furpetto_vpc" {
-  cidr_block = "172.31.0.0/16"
+  cidr_block           = "172.31.0.0/16"
   enable_dns_hostnames = true
-  enable_dns_support = true
+  enable_dns_support   = true
 
   tags = {
     Name = "dev"
@@ -9,10 +9,10 @@ resource "aws_vpc" "furpetto_vpc" {
 }
 
 resource "aws_subnet" "furpetto_subnet" {
-  vpc_id = aws_vpc.furpetto_vpc.id
-  cidr_block = "172.31.16.0/20"
+  vpc_id                  = aws_vpc.furpetto_vpc.id
+  cidr_block              = "172.31.16.0/20"
   map_public_ip_on_launch = true
-  availability_zone = "ap-northeast-1a"
+  availability_zone       = "ap-northeast-1a"
 
   tags = {
     Name = "dev-public"
@@ -36,32 +36,32 @@ resource "aws_route_table" "furpetto_public_rt" {
 }
 
 resource "aws_route" "default_route" {
-  route_table_id = aws_route_table.furpetto_public_rt.id
+  route_table_id         = aws_route_table.furpetto_public_rt.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_internet_gateway.furpetto_igw.id
+  gateway_id             = aws_internet_gateway.furpetto_igw.id
 }
 
 resource "aws_route_table_association" "furpetto_public_rt_assoc" {
-  subnet_id = aws_subnet.furpetto_subnet.id
+  subnet_id      = aws_subnet.furpetto_subnet.id
   route_table_id = aws_route_table.furpetto_public_rt.id
 }
 
 resource "aws_security_group" "furpetto_sg" {
-  name = "dev-sg"
+  name        = "dev-sg"
   description = "dev-security-group"
-  vpc_id = aws_vpc.furpetto_vpc.id
+  vpc_id      = aws_vpc.furpetto_vpc.id
 
   ingress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -69,8 +69,8 @@ resource "aws_security_group" "furpetto_sg" {
 # Lambda Execution Role
 data "aws_iam_policy_document" "AWSLambdaTrustPolicy" {
   statement {
-    actions    = ["sts:AssumeRole"]
-    effect     = "Allow"
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
     principals {
       type        = "Service"
       identifiers = ["lambda.amazonaws.com"]
@@ -80,40 +80,40 @@ data "aws_iam_policy_document" "AWSLambdaTrustPolicy" {
 
 resource "aws_iam_role" "furpetto_function_role" {
   name               = "furpetto_function_role"
-  assume_role_policy = "${data.aws_iam_policy_document.AWSLambdaTrustPolicy.json}"
+  assume_role_policy = data.aws_iam_policy_document.AWSLambdaTrustPolicy.json
 }
 
 resource "aws_iam_role_policy_attachment" "furpetto_lambda_policy" {
-  role       = "${aws_iam_role.furpetto_function_role.name}"
+  role       = aws_iam_role.furpetto_function_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 # Lambda Layers
 resource "aws_lambda_layer_version" "lambda_deps_layer" {
-  layer_name          = "shared_deps"
+  layer_name = "shared_deps"
 
-  filename            = data.archive_file.deps_layer_code_zip.output_path
-  source_code_hash    = data.archive_file.deps_layer_code_zip.output_base64sha256
-  
-  compatible_runtimes = [ "nodejs20.x" ]
+  filename         = data.archive_file.deps_layer_code_zip.output_path
+  source_code_hash = data.archive_file.deps_layer_code_zip.output_base64sha256
+
+  compatible_runtimes = ["nodejs20.x"]
 }
 
 resource "aws_lambda_layer_version" "lambda_utils_layer" {
-  layer_name          = "shared_utils"
+  layer_name = "shared_utils"
 
-  filename            = data.archive_file.utils_layer_code_zip.output_path
-  source_code_hash    = data.archive_file.utils_layer_code_zip.output_base64sha256
-  
-  compatible_runtimes = [ "nodejs20.x" ]
+  filename         = data.archive_file.utils_layer_code_zip.output_path
+  source_code_hash = data.archive_file.utils_layer_code_zip.output_base64sha256
+
+  compatible_runtimes = ["nodejs20.x"]
 }
 
 resource "aws_lambda_layer_version" "lambda_services_layer" {
-  layer_name          = "shared_utils"
+  layer_name = "shared_utils"
 
-  filename            = data.archive_file.services_layer_code_zip.output_path
-  source_code_hash    = data.archive_file.services_layer_code_zip.output_base64sha256
-  
-  compatible_runtimes = [ "nodejs20.x" ]
+  filename         = data.archive_file.services_layer_code_zip.output_path
+  source_code_hash = data.archive_file.services_layer_code_zip.output_base64sha256
+
+  compatible_runtimes = ["nodejs20.x"]
 }
 
 data "archive_file" "deps_layer_code_zip" {
@@ -136,11 +136,11 @@ data "archive_file" "services_layer_code_zip" {
 
 # Lambda Functions
 resource "aws_lambda_function" "get_demo_lambda" {
-  function_name    = "get-demo"
-  runtime          = "nodejs20.x"
-  handler          = "index.handler"
+  function_name = "get-demo"
+  runtime       = "nodejs20.x"
+  handler       = "index.handler"
 
-  role             = aws_iam_role.furpetto_function_role.arn
+  role = aws_iam_role.furpetto_function_role.arn
 
   filename         = data.archive_file.get_demo_zip.output_path
   source_code_hash = data.archive_file.get_demo_zip.output_base64sha256
@@ -156,4 +156,52 @@ data "archive_file" "get_demo_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../dist/handlers/get-demo/"
   output_path = "${path.module}/../dist/get-demo.zip"
+}
+
+# API Gateway
+resource "aws_api_gateway_rest_api" "furpetto_api" {
+  name        = "furpetto-api"
+  description = "Furpetto API"
+}
+
+resource "aws_api_gateway_resource" "furpetto_api_resource" {
+  rest_api_id = aws_api_gateway_rest_api.furpetto_api.id
+  parent_id   = aws_api_gateway_rest_api.furpetto_api.root_resource_id
+  path_part   = "v1/demo"
+}
+
+resource "aws_api_gateway_method" "furpetto_api_method" {
+  rest_api_id   = aws_api_gateway_rest_api.furpetto_api.id
+  resource_id   = aws_api_gateway_resource.furpetto_api_resource.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "furpetto_api_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.furpetto_api.id
+  resource_id             = aws_api_gateway_resource.furpetto_api_resource.id
+  http_method             = aws_api_gateway_method.furpetto_api_method.http_method
+  type                    = "AWS_PROXY"
+  integration_http_method = "GET"
+  uri                     = aws_lambda_function.get_demo_lambda.invoke_arn
+}
+
+# Postgres RDS
+resource "aws_db_instance" "furpetto_db" {
+  allocated_storage      = 20
+  storage_type           = "gp3"
+  engine                 = "postgres"
+  engine_version         = "15.4"
+  instance_class         = "db.t2.micro"
+  db_name                = "furpetto"
+  username               = var.postgresql_username
+  password               = var.postgresql_password
+  parameter_group_name   = "default.postgres15"
+  skip_final_snapshot    = true
+  publicly_accessible    = false
+  vpc_security_group_ids = [aws_security_group.furpetto_sg.id]
+
+  tags = {
+    Name = "dev-db"
+  }
 }

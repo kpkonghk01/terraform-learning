@@ -10,7 +10,8 @@
     "test": "jest --clearCache --coverage",
     "tf:init": "terraform -chdir=terraform init",
     "tf:apply": "terraform -chdir=terraform apply",
-    "tf:plan": "terraform -chdir=terraform plan -out=deploy.tfplan --var-file=env.tfvars"
+    "tf:plan": "terraform -chdir=terraform plan -out=deploy.tfplan --var-file=env.tfvars",
+    "tf:format": "terraform -chdir=terraform fmt"
   },
   "dependencies": {
     "aws-lambda": "^1.0.7"
