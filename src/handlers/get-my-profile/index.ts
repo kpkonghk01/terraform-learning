@@ -1,6 +1,6 @@
 // import from utils example
-import { minus } from "/opt/nodejs/services/test";
-import { add } from "/opt/nodejs/utils/test";
+import { minus } from "/opt/services/test.js";
+import { add } from "/opt/utils/test.js";
 
 import { APIGatewayEvent, Handler } from "aws-lambda";
 

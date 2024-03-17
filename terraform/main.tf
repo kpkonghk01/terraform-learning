@@ -67,7 +67,7 @@ resource "aws_security_group" "furpetto_sg" {
 }
 
 # Lambda Execution Role
-data "aws_iam_policy_document" "AWSLambdaTrustPolicy" {
+data "aws_iam_policy_document" "lambda_assume_role_policy" {
   statement {
     actions = ["sts:AssumeRole"]
     effect  = "Allow"
@@ -80,7 +80,7 @@ data "aws_iam_policy_document" "AWSLambdaTrustPolicy" {
 
 resource "aws_iam_role" "furpetto_function_role" {
   name               = "furpetto_function_role"
-  assume_role_policy = data.aws_iam_policy_document.AWSLambdaTrustPolicy.json
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "furpetto_lambda_policy" {
@@ -98,64 +98,57 @@ resource "aws_lambda_layer_version" "lambda_deps_layer" {
   compatible_runtimes = ["nodejs20.x"]
 }
 
-resource "aws_lambda_layer_version" "lambda_utils_layer" {
-  layer_name = "shared_utils"
+resource "aws_lambda_layer_version" "lambda_modules_layer" {
+  layer_name = "shared_modules"
 
-  filename         = data.archive_file.utils_layer_code_zip.output_path
-  source_code_hash = data.archive_file.utils_layer_code_zip.output_base64sha256
-
-  compatible_runtimes = ["nodejs20.x"]
-}
-
-resource "aws_lambda_layer_version" "lambda_services_layer" {
-  layer_name = "shared_utils"
-
-  filename         = data.archive_file.services_layer_code_zip.output_path
-  source_code_hash = data.archive_file.services_layer_code_zip.output_base64sha256
+  filename         = data.archive_file.modules_layer_code_zip.output_path
+  source_code_hash = data.archive_file.modules_layer_code_zip.output_base64sha256
 
   compatible_runtimes = ["nodejs20.x"]
 }
 
 data "archive_file" "deps_layer_code_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/layers/deps/"
+  source_dir  = "${path.module}/../dist/deps/"
   output_path = "${path.module}/../dist/deps.zip"
 }
 
-data "archive_file" "utils_layer_code_zip" {
+data "archive_file" "modules_layer_code_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/layers/utils/"
-  output_path = "${path.module}/../dist/utils.zip"
-}
-
-data "archive_file" "services_layer_code_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/../dist/layers/services/"
-  output_path = "${path.module}/../dist/services.zip"
+  source_dir  = "${path.module}/../dist/modules/"
+  output_path = "${path.module}/../dist/modules.zip"
 }
 
 # Lambda Functions
-resource "aws_lambda_function" "get_demo_lambda" {
-  function_name = "get-demo"
+resource "aws_lambda_function" "get_my_profile_handler" {
+  function_name = "get-my-profile"
   runtime       = "nodejs20.x"
   handler       = "index.handler"
 
   role = aws_iam_role.furpetto_function_role.arn
 
-  filename         = data.archive_file.get_demo_zip.output_path
-  source_code_hash = data.archive_file.get_demo_zip.output_base64sha256
+  filename         = data.archive_file.get_my_profile_archive.output_path
+  source_code_hash = data.archive_file.get_my_profile_archive.output_base64sha256
 
   layers = [
     aws_lambda_layer_version.lambda_deps_layer.arn,
-    aws_lambda_layer_version.lambda_utils_layer.arn,
-    aws_lambda_layer_version.lambda_services_layer.arn
+    aws_lambda_layer_version.lambda_modules_layer.arn
   ]
 }
 
-data "archive_file" "get_demo_zip" {
+resource "aws_lambda_permission" "get_my_profile_permission" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_my_profile_handler.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.furpetto_api.execution_arn}/*"
+}
+
+data "archive_file" "get_my_profile_archive" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/handlers/get-demo/"
-  output_path = "${path.module}/../dist/get-demo.zip"
+  source_dir  = "${path.module}/../dist/handlers/get-my-profile/"
+  output_path = "${path.module}/../dist/get-my-profile.zip"
 }
 
 # API Gateway
@@ -164,44 +157,61 @@ resource "aws_api_gateway_rest_api" "furpetto_api" {
   description = "Furpetto API"
 }
 
-resource "aws_api_gateway_resource" "furpetto_api_resource" {
+resource "aws_api_gateway_resource" "my_resource" {
   rest_api_id = aws_api_gateway_rest_api.furpetto_api.id
   parent_id   = aws_api_gateway_rest_api.furpetto_api.root_resource_id
-  path_part   = "v1/demo"
+  path_part   = "my"
 }
 
-resource "aws_api_gateway_method" "furpetto_api_method" {
+resource "aws_api_gateway_resource" "my_profile_resource" {
+  rest_api_id = aws_api_gateway_rest_api.furpetto_api.id
+  parent_id   = aws_api_gateway_resource.my_resource.id
+  path_part   = "profile"
+}
+
+resource "aws_api_gateway_method" "get_my_profile_method" {
   rest_api_id   = aws_api_gateway_rest_api.furpetto_api.id
-  resource_id   = aws_api_gateway_resource.furpetto_api_resource.id
+  resource_id   = aws_api_gateway_resource.my_profile_resource.id
   http_method   = "GET"
   authorization = "NONE"
+  # How to use Cognito User Pool Authorizer?
+  # https://registry.terraform.io/providers/-/aws/5.40.0/docs/resources/api_gateway_method#usage-with-cognito-user-pool-authorizer
+  # authorization = "COGNITO_USER_POOLS"
 }
 
-resource "aws_api_gateway_integration" "furpetto_api_integration" {
+resource "aws_api_gateway_integration" "get_my_profile_integration" {
   rest_api_id             = aws_api_gateway_rest_api.furpetto_api.id
-  resource_id             = aws_api_gateway_resource.furpetto_api_resource.id
-  http_method             = aws_api_gateway_method.furpetto_api_method.http_method
+  resource_id             = aws_api_gateway_resource.my_profile_resource.id
+  http_method             = aws_api_gateway_method.get_my_profile_method.http_method
   type                    = "AWS_PROXY"
-  integration_http_method = "GET"
-  uri                     = aws_lambda_function.get_demo_lambda.invoke_arn
+  integration_http_method = "POST"
+  uri                     = aws_lambda_function.get_my_profile_handler.invoke_arn
+}
+
+resource "aws_api_gateway_deployment" "api_dev" {
+  depends_on        = [aws_api_gateway_integration.get_my_profile_integration]
+  rest_api_id       = aws_api_gateway_rest_api.furpetto_api.id
+  stage_name        = "api_dev"
+  stage_description = "Development Stage"
+  description       = "Deployed to Development"
 }
 
 # Postgres RDS
-resource "aws_db_instance" "furpetto_db" {
-  allocated_storage      = 20
-  storage_type           = "gp3"
-  engine                 = "postgres"
-  engine_version         = "15.4"
-  instance_class         = "db.t2.micro"
-  db_name                = "furpetto"
-  username               = var.postgresql_username
-  password               = var.postgresql_password
-  parameter_group_name   = "default.postgres15"
-  skip_final_snapshot    = true
-  publicly_accessible    = false
-  vpc_security_group_ids = [aws_security_group.furpetto_sg.id]
+# resource "aws_db_instance" "furpetto_db" {
+#   allocated_storage      = 20
+#   storage_type           = "gp3"
+#   engine                 = "postgres"
+#   engine_version         = "15.4"
+#   instance_class         = "db.t2.micro"
+#   db_name                = "furpetto"
+#   username               = var.postgresql_username
+#   password               = var.postgresql_password
+#   parameter_group_name   = "default.postgres15"
+#   skip_final_snapshot    = true
+#   publicly_accessible    = false
+#   vpc_security_group_ids = [aws_security_group.furpetto_sg.id]
 
-  tags = {
-    Name = "dev-db"
-  }
-}
+#   tags = {
+#     Name = "dev-db"
+#   }
+# }

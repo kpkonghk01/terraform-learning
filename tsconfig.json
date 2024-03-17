@@ -16,7 +16,7 @@
     "outDir": "dist",
     "baseUrl": "src",
     "paths": {
-      "/opt/nodejs/*": ["layers/*"]
+      "/opt/*": ["modules/*"]
     }
   },
   "include": ["src/**/*.ts"],

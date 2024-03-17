@@ -1,9 +1,9 @@
 #!/bin/bash
 
-mkdir -p dist/layers/deps
+mkdir -p dist/deps
 
-cp package*.json dist/layers/deps/
-cp yarn.lock dist/layers/deps/
-cd dist/layers/deps
+cp package*.json dist/deps/
+cp yarn.lock dist/deps/
+cd dist/deps
 
 yarn --frozen-lockfile
